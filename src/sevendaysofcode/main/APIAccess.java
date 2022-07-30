@@ -12,15 +12,45 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sevendaysofcode.model.Movie;
+
 public class APIAccess {
 
 	public static void main(String[] args) {
 
-		// Criação de variáveis para a key e para a url
-		String key = "<Key>";
-		String url = "https://imdb-api.com/en/API/Top250Movies/" + key;
+		// Código refatorado para fazer com que a requisição Http fosse feita dentro de
+		// um só método
+		String json = apiRequest();
 
+		// Criação da lista de filmes
+		List<Movie> movies = new ArrayList<>();
+
+		// Extraindo os filmes em uma lista de filmes que contem os atributos em forma
+		// de lista
+		List<List<String>> moviesAndAttributes = jsonParser(json);
+
+		// Utilização de um for para adicionar os dados a uma lista
+		for (List<String> attributes : moviesAndAttributes) {
+			// Tittle, Url, Rating Year
+
+			String title = attributesParser(attributes.get(2));
+			String urlImage = attributesParser(attributes.get(5));
+			Double rating = Double.parseDouble(attributesParser(attributes.get(7)));
+			Integer year = Integer.parseInt(attributesParser(attributes.get(4)));
+
+			movies.add(new Movie(title, urlImage, rating, year));
+		}
+
+		// Exibindo os itens da lista
+		movies.forEach(System.out::println);
+
+	}
+
+	private static String apiRequest() {
 		try {
+			// Criação de variáveis para a key e para a url
+			String key = "<Key>";
+			String url = "https://imdb-api.com/en/API/Top250Movies/" + key;
 
 			// Criação do HTTPClient que irá enviar a requisição, assim como da URI
 			// necessária para o request e do próprio request
@@ -32,65 +62,23 @@ public class APIAccess {
 			// Envio da requisição por parte do client e recebimento da resposta (refatorado
 			// de body para json)
 			String json = httpClient.send(request, BodyHandlers.ofString()).body();
-
-			// Extraindo os filmes em uma lista de filmes que contem os atributos em forma
-			// de lista
-			List<List<String>> moviesAndAttributes = jsonParser(json);
-
-			// Criação das listas de atributos
-			List<String> ids, rankings, titles, fullTitles, years, images, crews, imDbRating,
-					imDbRatingCount = new ArrayList<>();
-
-			// Atribuição dos valores a cada lista
-			ids = attributesParser(moviesAndAttributes, 0);
-			rankings = attributesParser(moviesAndAttributes, 1);
-			titles = attributesParser(moviesAndAttributes, 2);
-			fullTitles = attributesParser(moviesAndAttributes, 3);
-			years = attributesParser(moviesAndAttributes, 4);
-			images = attributesParser(moviesAndAttributes, 5);
-			crews = attributesParser(moviesAndAttributes, 6);
-			imDbRating = attributesParser(moviesAndAttributes, 7);
-			imDbRatingCount = attributesParser(moviesAndAttributes, 8);
-
-			// Exibição das listas no console
-			System.out.println(ids);
-			System.out.println(rankings);
-			System.out.println(titles);
-			System.out.println(fullTitles);
-			System.out.println(years);
-			System.out.println(images);
-			System.out.println(crews);
-			System.out.println(imDbRating);
-			System.out.println(imDbRatingCount);
-
+			return json;
 		} catch (URISyntaxException | InterruptedException | IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private static List<String> attributesParser(List<List<String>> moviesAndAttributes, int listIndex) {
-
-		// Criar a variável que será devolvida pelo método, já que é uma lista na qual
-		// adicionarei os dados
-		List<String> generatedList = new ArrayList<>();
-
-		// Para carregar a lista que será devolvida utilizarei um for para passar pos
-		// todos os filmes e pegar apenas o atributo necessário por meio da variável
-		// listIndex
+	private static String attributesParser(String attribute) {
+		// Método refatorado para extrair os caracteres especiais e apenas o valor do
+		// atributo da variável de entrada:
 		// Como existe uma chance do atributo ainda apresentar asterisco usei o replace
 		// para garantir a "limpeza" dos valores
 		// Também usei split para separar o código do cabeçalho do real valor
 		// (id:tt0111161)
-		for (List<String> movie : moviesAndAttributes) {
-			String attribute = movie.get(listIndex);
+		String[] values = attribute.split(":\"");
 
-			String[] values = attribute.split(":\"");
+		return values[1].replace("\"", "");
 
-			generatedList.add(values[1].replace("\"", ""));
-		}
-
-		// Por fim retorno a lista gerada
-		return generatedList;
 	}
 
 	private static List<List<String>> jsonParser(String json) {
@@ -141,7 +129,6 @@ public class APIAccess {
 			moviesAndAttributes.add(Arrays.asList(movie.split("\",\"")));
 		}
 
-		
 		return moviesAndAttributes;
 	}
 }
