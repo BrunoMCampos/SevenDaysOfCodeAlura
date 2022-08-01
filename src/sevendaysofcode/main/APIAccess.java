@@ -1,6 +1,9 @@
 package sevendaysofcode.main;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -12,6 +15,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import sevendaysofcode.html.HTMLGenerator;
 import sevendaysofcode.model.Movie;
 
 public class APIAccess {
@@ -41,8 +45,18 @@ public class APIAccess {
 			movies.add(new Movie(title, urlImage, rating, year));
 		}
 
-		// Exibindo os itens da lista
-		movies.forEach(System.out::println);
+		try {
+			PrintWriter writer = new PrintWriter(new File("index.html"));
+			HTMLGenerator generator = new HTMLGenerator(writer);
+			boolean generated = generator.generate(movies);
+			if(generated) {
+				System.out.println("Arquivo HTML gerado com sucesso");
+			}
+			
+			writer.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
 
 	}
 
